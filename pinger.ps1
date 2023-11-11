@@ -10,43 +10,40 @@ if ($targetHost -eq "") {
 $status = "DOWN"
 $logFile = "ping_log_$targetHost.txt"
 $startTime = Get-Date
-$duration = ""
 
 Write-Host "Monitoring $targetHost. Press Ctrl+C to stop."
 
-function LogStatusChange {
-    $endTime = Get-Date
-    $uptime = if ($status -eq "UP") { "Uptime: $duration" } else { "Downtime: $duration" }
-
-    if ($status -eq "DOWN") {
-        Write-Host "$(Get-Date) - [$targetHost] is now $status! $uptime" -ForegroundColor Red
-        Add-Content -Path $logFile -Value "$(Get-Date) - [$targetHost] is now $status! $uptime"
-    } else {
-        Write-Host "$(Get-Date) - [$targetHost] is now $status! $uptime" -ForegroundColor Green
-        Add-Content -Path $logFile -Value "$(Get-Date) - [$targetHost] is now $status! $uptime"
-    }
-}
-
+# Return days, hours, mins, secs between startTime and endTime
 function CalculateDuration {
-    $endTime = Get-Date
+    param (
+        [ref]$duration
+    )
     $durationSec = ($endTime - $startTime).TotalSeconds
-
     $days = [math]::floor($durationSec / 86400)
     $durationSec -= $days * 86400
-
     $hours = [math]::floor($durationSec / 3600)
     $durationSec -= $hours * 3600
-
     $minutes = [math]::floor($durationSec / 60)
     $seconds = [math]::floor($durationSec % 60)
+    $duration.Value = "$days days, {0:D2}:{1:D2}:{2:D2}" -f [int]$hours, [int]$minutes, [int]$seconds
+}
 
-    $duration = "$days days, {0:D2}:{1:D2}:{2:D2}" -f $hours, $minutes, $seconds
+function LogStatusChange {
+    $duration = ""
+    $endTime = Get-Date
+    CalculateDuration -duration ([ref]$duration)
+    if ($status -eq "DOWN") {
+        Write-Host "$(Get-Date) - [$targetHost] is now $status! Uptime: $duration" -ForegroundColor Red
+        Add-Content -Path $logFile -Value "$(Get-Date) - [$targetHost] is now $status! Uptime: $duration"
+    } else {
+        Write-Host "$(Get-Date) - [$targetHost] is now $status! Downtime: $duration" -ForegroundColor Green
+        Add-Content -Path $logFile -Value "$(Get-Date) - [$targetHost] is now $status! Downtime: $duration"
+    }
 }
 
 try {
     while ($true) {
-        $result = Test-Connection -ComputerName $host -Count 1 -ErrorAction SilentlyContinue
-
+        $result = Test-Connection -ComputerName $targetHost -Count 1 -ErrorAction SilentlyContinue
         if ($result -eq $null) {
             if ($status -eq "UP") {
                 $status = "DOWN"
