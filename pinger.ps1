@@ -1,3 +1,9 @@
+# Pinger
+# Just ping a host continuously and record UP/DOWN/DURATION events
+# R.Guthrie
+# Version: 12-Nov-2023 - original
+# Version: 13-Nov-2023 - changed output dates to ISO8601 format
+
 param(
     [string]$targetHost = ""
 )
@@ -31,13 +37,14 @@ function CalculateDuration {
 function LogStatusChange {
     $duration = ""
     $endTime = Get-Date
+    $datetimeISO = Get-Date -Format yyyy-MM-ddTHH:mm:ss
     CalculateDuration -duration ([ref]$duration)
     if ($status -eq "DOWN") {
-        Write-Host "$(Get-Date) - [$targetHost] is now $status! Uptime: $duration" -ForegroundColor Red
-        Add-Content -Path $logFile -Value "$(Get-Date) - [$targetHost] is now $status! Uptime: $duration"
+        Write-Host "$datetimeISO - [$targetHost] is now $status! Uptime was: $duration" -ForegroundColor Red
+        Add-Content -Path $logFile -Value "$datetimeISO - [$targetHost] is now $status! Uptime was: $duration"
     } else {
-        Write-Host "$(Get-Date) - [$targetHost] is now $status! Downtime: $duration" -ForegroundColor Green
-        Add-Content -Path $logFile -Value "$(Get-Date) - [$targetHost] is now $status! Downtime: $duration"
+        Write-Host "$datetimeISO - [$targetHost] is now $status! Downtime was: $duration" -ForegroundColor Green
+        Add-Content -Path $logFile -Value "$datetimeISO - [$targetHost] is now $status! Downtime was: $duration"
     }
 }
 
